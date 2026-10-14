@@ -1,0 +1,12 @@
+# Trusted startup configuration. Credentials stay in .env / private key files.
+[auth.sim_swap]
+factory = "camara_server.auth.client_credentials:build_private_key_jwt"
+env_prefix = "UPSTREAM"
+include_client_id = false
+
+[[modules]]
+id = "sim_swap"
+factory = "camara_server.modules.sim_swap:create_module"
+auth_profile = "sim_swap"
+endpoint_env = "UPSTREAM_CHECK_URL"
+enabled = true

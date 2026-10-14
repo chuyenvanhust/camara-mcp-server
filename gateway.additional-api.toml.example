@@ -1,0 +1,13 @@
+# Append these entries to gateway.toml AFTER implementing/onboarding the API.
+# This template is disabled and never calls a provider by default.
+[auth.new_api]
+factory = "camara_server.auth.client_credentials:build_basic"
+env_prefix = "NEW_API"
+
+[[modules]]
+id = "new_api"
+factory = "camara_server.modules.template_api:create_module"
+auth_profile = "new_api"
+endpoint_env = "NEW_API_ENDPOINT"
+tool_name = "new_api_call"
+enabled = false

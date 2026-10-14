@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camara-mcp
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: camara-mcp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: camara-mcp
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      # Add imagePullSecrets if the registry requires authentication.
+      containers:
+        - name: server
+          image: registry.example.com/camara/mcp-server:0.5.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: camara-mcp-config
+          env:
+            - name: MCP_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camara-mcp-credentials
+                  key: MCP_CLIENT_SECRET
+            - name: MCP_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camara-mcp-credentials
+                  key: MCP_SIGNING_SECRET
+            - name: UPSTREAM_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: camara-mcp-credentials
+                  key: UPSTREAM_CLIENT_ID
+            - name: UPSTREAM_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: camara-mcp-credentials
+                  key: UPSTREAM_KEY_ID
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost:3000
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost:3000
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: localhost:3000
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: upstream-key
+              mountPath: /run/secrets
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: upstream-key
+          secret:
+            secretName: camara-mcp-upstream-key
+            defaultMode: 288 # 0440: owner/group read, fsGroup enables non-root access
+            items:
+              - key: upstream-private.pem
+                path: upstream-private.pem
+        - name: tmp
+          emptyDir:
+            sizeLimit: 32Mi

@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camara-mcp
+spec:
+  # Replace with an existing IngressClass supported by your platform.
+  ingressClassName: replace-ingress-class
+  tls:
+    - hosts:
+        - mcp.example.vn
+      secretName: camara-mcp-tls
+  rules:
+    - host: mcp.example.vn
+      http:
+        paths:
+          - path: /mcp
+            pathType: Exact
+            backend:
+              service:
+                name: camara-mcp
+                port:
+                  name: http
+          - path: /oauth/token
+            pathType: Exact
+            backend:
+              service:
+                name: camara-mcp
+                port:
+                  name: http
+          - path: /.well-known/
+            pathType: Prefix
+            backend:
+              service:
+                name: camara-mcp
+                port:
+                  name: http
