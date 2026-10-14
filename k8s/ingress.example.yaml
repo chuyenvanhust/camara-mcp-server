@@ -1,4 +1,6 @@
 apiVersion: networking.k8s.io/v1
+# Routing example only. Attach the Open Gateway OAuth policy before exposing.
+# Not included in default kustomization: the backend must stay behind the gateway.
 kind: Ingress
 metadata:
   name: camara-mcp
@@ -15,20 +17,6 @@ spec:
         paths:
           - path: /mcp
             pathType: Exact
-            backend:
-              service:
-                name: camara-mcp
-                port:
-                  name: http
-          - path: /oauth/token
-            pathType: Exact
-            backend:
-              service:
-                name: camara-mcp
-                port:
-                  name: http
-          - path: /.well-known/
-            pathType: Prefix
             backend:
               service:
                 name: camara-mcp

@@ -15,10 +15,10 @@ class SimSwapService:
     def prepare(self):
         if self.provider is not None:
             return
-        context = ProviderContext(ROOT, self.config.environment, self.client, self.config.bridge.timeout)
+        context = ProviderContext(ROOT, self.config.environment, self.client, self.config.timeout)
         self.provider = build_private_key_jwt(context, {'env_prefix':'UPSTREAM', 'include_client_id':False})
         self.api = SimSwapApi(GatewayApiClient(self.client, self.provider,
-            self.config.environment['UPSTREAM_CHECK_URL'], self.config.bridge.timeout))
+            self.config.environment['UPSTREAM_CHECK_URL'], self.config.timeout))
 
     async def token(self):
         self.prepare()

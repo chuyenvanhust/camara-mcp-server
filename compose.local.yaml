@@ -11,8 +11,6 @@ services:
       BIND_HOST: "0.0.0.0"
       PORT: "3000"
       MCP_SERVER_URL: "http://localhost:3001/mcp"
-      MCP_ISSUER: "http://localhost:3001"
-      MCP_TOKEN_URL: "http://localhost:3001/oauth/token"
       GATEWAY_MODULES_FILE: "/app/gateway.toml"
       UPSTREAM_PRIVATE_KEY_PATH: "/run/secrets/upstream-private.pem"
       UPSTREAM_CLIENT_ASSERTION_PATH: ""

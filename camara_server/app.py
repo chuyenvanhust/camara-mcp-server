@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 import uvicorn
 from camara_server.config import PROTOCOL_VERSION, ROOT, ServerConfig
-from .oauth import ServerAuthMiddleware, endpoints
+from .transport import TransportMiddleware
 from .core.contracts import ProviderContext
 from .core.registry import ToolRegistry, load_registry
 
@@ -46,15 +46,15 @@ def make_server(registry: ToolRegistry):
             raise MCPError(INVALID_PARAMS, "Invalid cursor")
         return ListResourceTemplatesResult(resource_templates=[], ttl_ms=30000, cache_scope="private")
 
-    return Server("camara-open-gateway", version="0.5.0", on_list_tools=list_tools, on_call_tool=call_tool,
+    return Server("camara-open-gateway", version="0.6.0", on_list_tools=list_tools, on_call_tool=call_tool,
         on_list_prompts=list_prompts if registry.prompts else None, on_get_prompt=get_prompt if registry.prompts else None,
         on_list_resources=list_resources if registry.resources else None, on_read_resource=read_resource if registry.resources else None,
         on_list_resource_templates=list_resource_templates if registry.resources else None)
 
 
 def create_app(config: ServerConfig, registry: ToolRegistry | None = None):
-    http_client = httpx.AsyncClient(timeout=config.bridge.timeout, follow_redirects=False)
-    registry = registry or load_registry(config.modules_file, ProviderContext(ROOT, config.environment, http_client, config.bridge.timeout))
+    http_client = httpx.AsyncClient(timeout=config.timeout, follow_redirects=False)
+    registry = registry or load_registry(config.modules_file, ProviderContext(ROOT, config.environment, http_client, config.timeout))
     server = make_server(registry)
     app = server.streamable_http_app(json_response=True, stateless_http=True,
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True,
@@ -70,16 +70,10 @@ def create_app(config: ServerConfig, registry: ToolRegistry | None = None):
                 await registry.aclose()
 
     app.router.lifespan_context = lifespan
-    resource_metadata, server_metadata, token = endpoints(config)
     async def health(request):
         return JSONResponse({"status": "ok", "mode": config.mode, "protocolVersion": PROTOCOL_VERSION, "modules": registry.module_ids})
-    app.router.routes.extend([
-        Route("/health", health), Route("/oauth/token", token, methods=["POST"]),
-        Route("/.well-known/oauth-protected-resource/mcp", resource_metadata),
-        Route("/.well-known/oauth-protected-resource", resource_metadata),
-        Route("/.well-known/oauth-authorization-server", server_metadata),
-    ])
-    return ServerAuthMiddleware(app, config)
+    app.router.routes.append(Route("/health", health))
+    return TransportMiddleware(app, config)
 
 
 def main():

@@ -30,7 +30,7 @@ spec:
       # Add imagePullSecrets if the registry requires authentication.
       containers:
         - name: server
-          image: registry.example.com/camara/mcp-server:0.5.0
+          image: registry.example.com/camara/mcp-server:0.6.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -39,16 +39,6 @@ spec:
             - configMapRef:
                 name: camara-mcp-config
           env:
-            - name: MCP_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camara-mcp-credentials
-                  key: MCP_CLIENT_SECRET
-            - name: MCP_SIGNING_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camara-mcp-credentials
-                  key: MCP_SIGNING_SECRET
             - name: UPSTREAM_CLIENT_ID
               valueFrom:
                 secretKeyRef:
